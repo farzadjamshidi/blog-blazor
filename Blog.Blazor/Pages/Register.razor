@@ -1,0 +1,81 @@
+@page "/register"
+@using Blog.Blazor.Services
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Register</h3>
+
+<EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>User Name:</label>
+        <InputText @bind-Value="registerModel.UserName" />
+    </div>
+    <div>
+        <label>Password:</label>
+        <InputText @bind-Value="registerModel.Password" type="password" />
+    </div>
+    <div>
+        <label>First Name:</label>
+        <InputText @bind-Value="registerModel.FirstName" />
+    </div>
+    <div>
+        <label>Last Name:</label>
+        <InputText @bind-Value="registerModel.LastName" />
+    </div>
+    <div>
+        <label>Phone:</label>
+        <InputText @bind-Value="registerModel.Phone" />
+    </div>
+    <div>
+        <label>Date of Birth:</label>
+        <InputDate @bind-Value="registerModel.DateOfBirth" />
+    </div>
+    <div>
+        <label>Current City:</label>
+        <InputText @bind-Value="registerModel.CurrentCity" />
+    </div>
+
+    <button type="submit">Register</button>
+</EditForm>
+
+@code {
+    private RegisterModel registerModel = new RegisterModel();
+    [Inject] public LocalStorageService LocalStorage { get; set; }
+
+    private async Task HandleRegister()
+    {
+        registerModel.DateOfBirth = registerModel.DateOfBirth.ToUniversalTime();
+        var response = await Http.PostAsJsonAsync("api/v1/Identity/Register", registerModel);
+        if (response.IsSuccessStatusCode)
+        {
+            var token = await response.Content.ReadFromJsonAsync<RegisterResponseModel>();
+            // Save token to local storage
+            await LocalStorage.SetItemAsync("authToken", token.Token);
+            // Redirect to some other page, e.g., home
+            Navigation.NavigateTo("");
+        }
+        else
+        {
+            // Handle error
+        }
+    }
+
+    public class RegisterModel
+    {
+        public string UserName { get; set; }
+        public string Password { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string Phone { get; set; }
+        public DateTime DateOfBirth { get; set; }
+        public string CurrentCity { get; set; }
+    }
+    
+    public class RegisterResponseModel
+    {
+        public string Token { get; set; }
+    }
+}

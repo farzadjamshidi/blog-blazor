@@ -1,0 +1,42 @@
+﻿@page "/post"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IHttpClientFactory HttpClientFactory
+
+<h3>Create Post</h3>
+
+<div class="row">
+    <EditForm Model="@post" OnValidSubmit="InsertPost">
+        <div class="form-group">
+            <label>Text: </label>
+            <InputText @bind-Value="post.Text" />
+        </div>
+        <div class="form-group">
+            <input type="submit" class="btn btn-success" value="Create Post" />
+            <NavLink href="" class="btn btn-info">Back to Home</NavLink>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    
+    public class CreatePost
+    {
+        public string Text { get; set; }
+    }
+    
+    private CreatePost post = new CreatePost();
+
+    protected override void OnInitialized()
+    {
+        
+    }
+
+    private async Task InsertPost()
+    {
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        await client.PostAsJsonAsync<CreatePost>("https://localhost:7163/api/v1/Post", post);
+        Navigation.NavigateTo("/home");
+    }
+    
+}

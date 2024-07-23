@@ -1,0 +1,35 @@
+﻿@page "/"
+@inject HttpClient Http
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Home</PageTitle>
+
+@if (_posts == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    @foreach (var post in _posts)
+    {
+        <div>@post.Text</div>
+    }
+}
+
+@code {
+    private CreatePostDtoRes[]? _posts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        _posts = await client.GetFromJsonAsync<CreatePostDtoRes[]>("https://localhost:7163/api/v1/Post");
+    }
+
+    class CreatePostDtoRes
+    {
+        public string Text { get; set; }
+    }
+
+}
