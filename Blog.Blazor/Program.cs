@@ -8,7 +8,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7163/") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://farzad-blog-api.azurewebsites.net/") });
 builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddCustomAuthorizationHandler();
 
