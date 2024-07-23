@@ -24,7 +24,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         var client = HttpClientFactory.CreateClient("AuthorizedClient");
-        _posts = await client.GetFromJsonAsync<CreatePostDtoRes[]>("https://localhost:7163/api/v1/Post");
+        _posts = await client.GetFromJsonAsync<CreatePostDtoRes[]>("https://farzad-blog-api.azurewebsites.net/api/v1/Post");
     }
 
     class CreatePostDtoRes
