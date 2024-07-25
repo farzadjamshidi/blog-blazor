@@ -1,4 +1,5 @@
 @page "/register"
+@using Blog.Blazor.Extensions
 @using Blog.Blazor.Services
 @inject HttpClient Http
 @inject NavigationManager Navigation
@@ -14,7 +15,7 @@
         <InputText @bind-Value="registerModel.UserName" />
     </div>
     <div>
-        <label>Password:</label>
+        <label>Password: (minimum 6 characters) </label>
         <InputText @bind-Value="registerModel.Password" type="password" />
     </div>
     <div>
@@ -43,7 +44,7 @@
 
 @code {
     private RegisterModel registerModel = new RegisterModel();
-    [Inject] public LocalStorageService LocalStorage { get; set; }
+    [Inject] public AuthenticationStateProvider authStateProvider { get; set; }
 
     private async Task HandleRegister()
     {
@@ -52,10 +53,9 @@
         if (response.IsSuccessStatusCode)
         {
             var token = await response.Content.ReadFromJsonAsync<RegisterResponseModel>();
-            // Save token to local storage
-            await LocalStorage.SetItemAsync("authToken", token.Token);
-            // Redirect to some other page, e.g., home
-            Navigation.NavigateTo("");
+            var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationStateAsync(token?.Token);
+            Navigation.NavigateTo("/");
         }
         else
         {

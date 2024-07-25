@@ -1,4 +1,5 @@
 @page "/login"
+@using Blog.Blazor.Extensions
 @using Blog.Blazor.Services
 @inject HttpClient Http
 @inject NavigationManager Navigation
@@ -26,6 +27,7 @@
     private LoginModel loginModel = new LoginModel();
     
     [Inject] public LocalStorageService LocalStorage { get; set; }
+    [Inject] public AuthenticationStateProvider authStateProvider { get; set; }
 
     private async Task HandleLogin()
     {
@@ -33,10 +35,9 @@
         if (response.IsSuccessStatusCode)
         {
             var token = await response.Content.ReadFromJsonAsync<LoginResponseModel>();
-            // Save token to local storage
-            await LocalStorage.SetItemAsync("authToken", token.Token);
-            // Redirect to some other page, e.g., home
-            Navigation.NavigateTo("");
+            var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationStateAsync(token?.Token);
+            Navigation.NavigateTo("/");
         }
         else
         {

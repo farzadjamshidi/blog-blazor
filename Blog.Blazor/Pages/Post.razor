@@ -1,7 +1,9 @@
 ﻿@page "/post"
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject IHttpClientFactory HttpClientFactory
+@attribute [Authorize()]
 
 <h3>Create Post</h3>
 
@@ -19,17 +21,17 @@
 </div>
 
 @code {
-    
+
     public class CreatePost
     {
         public string Text { get; set; }
     }
-    
+
     private CreatePost post = new CreatePost();
 
     protected override void OnInitialized()
     {
-        
+
     }
 
     private async Task InsertPost()
@@ -38,5 +40,5 @@
         await client.PostAsJsonAsync<CreatePost>("https://farzad-blog-api.azurewebsites.net/api/v1/Post", post);
         Navigation.NavigateTo("/home");
     }
-    
+
 }

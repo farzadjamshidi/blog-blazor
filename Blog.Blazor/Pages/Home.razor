@@ -4,32 +4,11 @@
 
 <PageTitle>Home</PageTitle>
 
-@if (_posts == null)
-{
-    <p>
-        <em>Loading...</em>
-    </p>
-}
-else
-{
-    @foreach (var post in _posts)
-    {
-        <div>@post.Text</div>
-    }
-}
-
-@code {
-    private CreatePostDtoRes[]? _posts;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var client = HttpClientFactory.CreateClient("AuthorizedClient");
-        _posts = await client.GetFromJsonAsync<CreatePostDtoRes[]>("https://farzad-blog-api.azurewebsites.net/api/v1/Post");
-    }
-
-    class CreatePostDtoRes
-    {
-        public string Text { get; set; }
-    }
-
-}
+<AuthorizeView>
+    <Authorized>
+        <h1>Hello, @context.User.Identity?.Name</h1>
+    </Authorized>
+    <NotAuthorized>
+        <h1>Hello, Guest!</h1>
+    </NotAuthorized>
+</AuthorizeView>

@@ -1,5 +1,9 @@
-﻿@using Blog.Blazor.Services
+﻿@using Blog.Blazor.Extensions
+@using Blog.Blazor.Services
+@inject AuthenticationStateProvider authStateProvider;
+@inject NavigationManager Navigation;
 @inherits LayoutComponentBase
+
 <div class="page">
     <div class="sidebar">
         <NavMenu/>
@@ -7,15 +11,15 @@
 
     <main>
         <div class="top-row px-4">
-            @if (isAuthenticated)
-            {
-                <a href="logout" target="_blank">Logout</a>
-            }
-            else
-            {
-                <a href="login" target="_blank">Login</a>
-            }
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <AuthorizeView>
+                <Authorized>
+                    <a @onclick="Logout" href="javascript:void(0)">Logout</a>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="login">Login</a>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
 
         <article class="content px-4">
@@ -26,11 +30,10 @@
 
 @code
 {
-    private Boolean isAuthenticated;
-    [Inject] public LocalStorageService LocalStorage { get; set; }
-
-    protected override async Task OnInitializedAsync()
+    private async Task Logout()
     {
-        isAuthenticated = !String.IsNullOrEmpty(await LocalStorage.GetItemAsync("authToken"));
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+        await customAuthStateProvider.UpdateAuthenticationStateAsync(null);
+        Navigation.NavigateTo("/");
     }
 }
