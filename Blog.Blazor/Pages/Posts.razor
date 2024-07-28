@@ -1,6 +1,7 @@
 ﻿@page "/posts"
 @using Microsoft.AspNetCore.Authorization
 @inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
 @attribute [Authorize()]
 
 <PageTitle>Home</PageTitle>
@@ -15,22 +16,43 @@ else
 {
     @foreach (var post in _posts)
     {
-        <div>@post.Text</div>
+        <div @onclick="() => GoToPostDetail(post)" style="margin: 16px; padding: 16px; border: 1px solid black; border-radius: 5px">
+            <span>@post.UserProfile.BasicInfo.FirstName</span> <span>@post.UserProfile.BasicInfo.LastName</span> @@ <span>@post.UserProfile.BasicInfo.CurrentCity</span>:
+            <div>@post.Text</div>
+        </div>
     }
 }
 
 @code {
-    private CreatePostDtoRes[]? _posts;
+    private PostDtoRes[]? _posts;
 
     protected override async Task OnInitializedAsync()
     {
         var client = HttpClientFactory.CreateClient("AuthorizedClient");
-        _posts = await client.GetFromJsonAsync<CreatePostDtoRes[]>("https://farzad-blog-api.azurewebsites.net/api/v1/Post");
+        _posts = await client.GetFromJsonAsync<PostDtoRes[]>("https://farzad-blog-api.azurewebsites.net/api/v1/Post");
     }
 
-    class CreatePostDtoRes
+    private void GoToPostDetail(PostDtoRes post)
     {
-        public string Text { get; set; }
+        Navigation.NavigateTo($"post/{post.Id}");
     }
 
+    class PostDtoRes
+    {
+        public string Id { get; set; }
+        public string Text { get; set; }
+        public UserProfile UserProfile { get; set; }
+    }
+    
+    public class UserProfile
+    {
+        public BasicInfo BasicInfo { get; set; }
+    }
+    
+    public class BasicInfo
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string CurrentCity { get; set; }
+    }
 }

@@ -1,0 +1,172 @@
+@page "/post/{id:guid}"
+@inject IHttpClientFactory HttpClientFactory
+<h3>PostDetail</h3>
+
+@if (_post == null)
+{
+<p>
+    <em>Loading...</em>
+</p>
+}
+else
+{
+    <div>@_post.Text</div>
+    
+    <div style="margin: 16px; display: flex">
+        @foreach (var interaction in _post.InteractionsCount)
+        {
+            <div style="margin-right: 16px; display: flex">
+                <div style="margin-right: 8px" @onclick="() => AddInteraction(interaction.Type)">@interaction.Type</div>
+                <div>@interaction.Count</div>
+            </div>
+        }
+    </div>
+
+    @foreach (var comment in _post.Comments)
+    {
+        <div style="margin: 16px; padding: 16px; border: 1px solid black; border-radius: 5px">
+            <span>@comment.UserProfile.BasicInfo.FirstName</span> <span>@comment.UserProfile.BasicInfo.LastName</span> @@ <span>@comment.UserProfile.BasicInfo.CurrentCity</span> : 
+            <div>@comment.Text</div>
+        </div>
+    }
+
+    <div class="row">
+        <EditForm Model="@_createComment" OnValidSubmit="AddComment">
+            <div class="form-group" style="margin: 16px">
+                <label>Text: </label>
+                <InputText @bind-Value="_createComment.Text" />
+            </div>
+            <div class="form-group">
+                <input type="submit" class="btn btn-success" value="Add Comment" />
+                <NavLink href="/posts" class="btn btn-info">Back to Posts</NavLink>
+            </div>
+        </EditForm>
+    </div>
+}
+
+
+@code {
+    [Parameter] 
+    public Guid Id { get; set; }
+    private GetPostByIdDtoRes? _post;
+    private CreateComment _createComment = new CreateComment();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        try
+        {
+            _post = await client.GetFromJsonAsync<GetPostByIdDtoRes>($"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}");
+
+            foreach (var type in Enum.GetValues(typeof(InteractionType)).Cast<InteractionType>())
+            {
+                var interactionCount = _post.InteractionsCount.FirstOrDefault(i => i.Type == type);
+                if (interactionCount == null)
+                {
+                    _post.InteractionsCount.Add(new InteractionCount()
+                    {
+                        Type = type,
+                        Count = 0
+                    });
+                }
+            }
+            
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+    }
+
+    private async Task AddComment()
+    {
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        try
+        {
+            await client.PostAsJsonAsync<CreateComment>($"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}/Comment", _createComment);
+            _createComment.Text = "";
+            await OnInitializedAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        
+    }
+
+    private async Task AddInteraction(InteractionType type)
+    {
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        try
+        {
+            var createInteraction = new CreateInteraction()
+            {
+                Type = type
+            };
+            await client.PostAsJsonAsync<CreateInteraction>($"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}/Interaction",createInteraction);
+            await OnInitializedAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+    
+    public class GetPostByIdDtoRes
+    {
+        public Guid Id { get; set; }
+        public Guid UserProfileId { get; set; }
+        public string Text { get; set; }
+        public List<PostComment> Comments { get; set; }
+        public List<InteractionCount> InteractionsCount { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public class InteractionCount
+    {
+        public InteractionType Type { get; set; }
+        public int Count { get; set; }
+    }
+    
+    public enum InteractionType
+    {
+        Like,
+        Wow,
+        Love
+    }
+
+    public class PostComment
+    {
+        public Guid Id { get; set; }
+        public Guid PostId { get; set; }
+        public UserProfile UserProfile { get; set; }
+        public string Text { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public class UserProfile
+    {
+        public BasicInfo BasicInfo { get; set; }
+    }
+    
+    public class BasicInfo
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string CurrentCity { get; set; }
+    }
+
+    public class CreateComment
+    {
+        public string Text { get; set; }
+    }
+    
+    public class CreateInteraction
+    {
+        public InteractionType Type { get; set; }
+    }
+
+}
