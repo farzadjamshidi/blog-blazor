@@ -4,6 +4,7 @@ using Blog.Blazor;
 using Blog.Blazor.Extensions;
 using Blog.Blazor.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -14,5 +15,6 @@ builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCustomAuthorizationHandler();
+builder.Services.AddMudServices();
 
 await builder.Build().RunAsync();
