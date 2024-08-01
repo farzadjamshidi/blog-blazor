@@ -1,5 +1,7 @@
 @page "/post/{id:guid}"
 @inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigate;
+
 <h3>PostDetail</h3>
 
 @if (_post == null)
@@ -10,7 +12,18 @@
 }
 else
 {
-    <div>@_post.Text</div>
+    <MudCard>
+        <MudCardContent>
+            <div class="d-flex">
+                <div class="flex-grow-1"></div>
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                         AriaLabel="Open post menu">
+                    <MudMenuItem @onclick="DeletePost">Delete</MudMenuItem>
+                </MudMenu>
+            </div>
+            <div>@_post.Text</div>
+        </MudCardContent>
+    </MudCard>
     
     <div style="margin: 16px; display: flex">
         @foreach (var interaction in _post.InteractionsCount)
@@ -77,6 +90,23 @@ else
             Console.WriteLine(e);
         }
 
+    }
+
+    private async Task DeletePost()
+    {
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        try
+        {
+            await client.DeleteAsync(
+                $"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}"
+                );
+            
+            Navigate.NavigateTo("posts");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 
     private async Task AddComment()
