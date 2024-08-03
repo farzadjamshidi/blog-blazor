@@ -1,0 +1,20 @@
+
+@switch (Name)
+{
+    case "Like":
+        <MudIcon Icon="@Icons.Material.Filled.ThumbUp" Color="Color.Info" Title="Like"/>
+    break;
+
+    case "Love":
+        <MudIcon Icon="@Icons.Material.Filled.VolunteerActivism" Color="Color.Error" Title="Love"/>
+    break;
+
+    case "Wow":
+        <MudIcon Icon="@Icons.Material.Filled.Bolt" Color="Color.Success" Title="Favorite"/>
+    break;
+}
+
+@code {
+    [Parameter]
+    public string Name { get; set; }
+}

@@ -1,4 +1,5 @@
 @page "/post/{id:guid}"
+@using Blog.Blazor.Components
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigate;
 
@@ -15,7 +16,9 @@ else
     <MudCard>
         <MudCardContent>
             <div class="d-flex">
-                <div class="flex-grow-1"></div>
+                <div class="flex-grow-1">
+                    <PostHeader Post="_post"/>
+                </div>
                 <MudMenu Icon="@Icons.Material.Filled.MoreVert"
                          AriaLabel="Open post menu">
                     <MudMenuItem @onclick="DeletePost">Delete</MudMenuItem>
@@ -25,11 +28,13 @@ else
         </MudCardContent>
     </MudCard>
     
-    <div style="margin: 16px; display: flex">
+    <div class="d-flex m-4">
         @foreach (var interaction in _post.InteractionsCount)
         {
-            <div style="margin-right: 16px; display: flex">
-                <div style="margin-right: 8px" @onclick="() => AddInteraction(interaction.Type)">@interaction.Type</div>
+            <div class="d-flex mr-4" @onclick="() => AddInteraction(interaction.Type)">
+                <div class="mr-1">
+                    <BlogIcon Name="@interaction.Type.ToString()" />
+                </div>
                 <div>@interaction.Count</div>
             </div>
         }
@@ -147,6 +152,7 @@ else
     {
         public Guid Id { get; set; }
         public Guid UserProfileId { get; set; }
+        public UserProfile UserProfile { get; set; }
         public string Text { get; set; }
         public List<PostComment> Comments { get; set; }
         public List<InteractionCount> InteractionsCount { get; set; }

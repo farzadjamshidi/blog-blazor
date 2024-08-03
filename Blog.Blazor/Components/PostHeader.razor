@@ -1,0 +1,15 @@
+@using Blog.Blazor.Pages
+<div class="d-flex">
+    <div class="profile-picture mr-1">
+        <img alt="profile picture" src="image/pp.jpg">
+    </div>
+    <div>
+        <div>@Post.UserProfile.BasicInfo.FirstName @Post.UserProfile.BasicInfo.LastName</div>
+        <div>@Post.UserProfile.BasicInfo.CurrentCity</div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public PostDetail.GetPostByIdDtoRes? Post { get; set; }
+}
