@@ -1,0 +1,37 @@
+@using Blog.Blazor.Pages
+@inject IHttpClientFactory HttpClientFactory
+
+<div class="ma-4 pa-4 border border-solid mud-border-primary rounded">
+    <div class="d-flex">
+        <div class="flex-grow-1 d-flex">
+            <div class="profile-picture mr-1">
+                <img alt="profile picture" src="image/pp.jpg">
+            </div>
+            <div>
+                <div>
+                    <span>@Comment.UserProfile.BasicInfo.FirstName</span> <span>@Comment.UserProfile.BasicInfo.LastName</span>
+                </div>
+                <div>@Comment.UserProfile.BasicInfo.CurrentCity</div>
+            </div>
+        </div>
+        <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                 AriaLabel="Open post menu">
+            <MudMenuItem @onclick="DeleteComment">Delete</MudMenuItem>
+        </MudMenu>
+    </div>
+
+    <div>@Comment.Text</div>
+</div>
+
+
+@code {
+    [Parameter]
+    public PostDetail.PostComment Comment {get; set; }
+    [Parameter]
+    public EventCallback<PostDetail.PostComment> OnDeleteComment { get; set; }
+    
+    private async Task DeleteComment()
+    {
+        await OnDeleteComment.InvokeAsync(Comment);
+    }
+}

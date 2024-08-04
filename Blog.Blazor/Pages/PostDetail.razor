@@ -42,10 +42,7 @@ else
 
     @foreach (var comment in _post.Comments)
     {
-        <div style="margin: 16px; padding: 16px; border: 1px solid black; border-radius: 5px">
-            <span>@comment.UserProfile.BasicInfo.FirstName</span> <span>@comment.UserProfile.BasicInfo.LastName</span> @@ <span>@comment.UserProfile.BasicInfo.CurrentCity</span> : 
-            <div>@comment.Text</div>
-        </div>
+        <PostComment Comment="comment" OnDeleteComment="DeleteComment"></PostComment>
     }
 
     <div class="row">
@@ -107,6 +104,22 @@ else
                 );
             
             Navigate.NavigateTo("posts");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+    
+    private async Task DeleteComment(PostComment comment)
+    {
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        try
+        {
+            await client.DeleteAsync(
+                $"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}/Comment/{comment.Id}"
+            );
+            await OnInitializedAsync();
         }
         catch (Exception e)
         {
