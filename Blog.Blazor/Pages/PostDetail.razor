@@ -1,7 +1,11 @@
 @page "/post/{id:guid}"
 @using Blog.Blazor.Components
+@using Blog.Blazor.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigate;
+@inject LocalStorageService LocalStorage
 
 <h3>PostDetail</h3>
 
@@ -62,11 +66,12 @@ else
 
 
 @code {
-    [Parameter] 
+    [Parameter]
     public Guid Id { get; set; }
     private GetPostByIdDtoRes? _post;
     private CreateComment _createComment = new CreateComment();
-    
+    private HubConnection? _hubConnection;
+
     protected override async Task OnInitializedAsync()
     {
         var client = HttpClientFactory.CreateClient("AuthorizedClient");
@@ -86,13 +91,58 @@ else
                     });
                 }
             }
-            
+
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
         }
 
+        // Guarded: this method is already re-invoked elsewhere in this file
+        // as a manual "reload" (AddComment/DeleteComment/AddInteraction) —
+        // only set up the live connection once, not on every reload.
+        if (_hubConnection == null)
+        {
+            var token = await LocalStorage.GetItemAsync("authToken");
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl("https://farzad-blog-api.azurewebsites.net/notification", options =>
+                {
+                    options.AccessTokenProvider = () => Task.FromResult(token);
+                })
+                .Build();
+
+            // Only this post's author ever receives this (server-side
+            // targeting) — the postId check just confirms it's this post.
+            _hubConnection.On<Guid, string>("NewComment", async (postId, _) =>
+            {
+                if (postId == Id)
+                {
+                    await InvokeAsync(async () =>
+                    {
+                        await OnInitializedAsync();
+                        StateHasChanged();
+                    });
+                }
+            });
+
+            try
+            {
+                await _hubConnection.StartAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection != null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 
     private async Task DeletePost()
