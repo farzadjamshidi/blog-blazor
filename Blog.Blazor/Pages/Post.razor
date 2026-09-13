@@ -37,7 +37,7 @@
     private async Task InsertPost()
     {
         var client = HttpClientFactory.CreateClient("AuthorizedClient");
-        await client.PostAsJsonAsync<CreatePost>("https://farzad-blog-api.azurewebsites.net/api/v1/Post", post);
+        await client.PostAsJsonAsync<CreatePost>("api/v1/Post", post);
         Navigation.NavigateTo("/home");
     }
 

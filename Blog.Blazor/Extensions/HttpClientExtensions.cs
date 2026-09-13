@@ -28,11 +28,11 @@ public class CustomAuthorizationMessageHandler : DelegatingHandler
 
 public static class HttpClientExtensions
 {
-    public static void AddCustomAuthorizationHandler(this IServiceCollection services)
+    public static void AddCustomAuthorizationHandler(this IServiceCollection services, string apiBaseUrl)
     {
         services.AddTransient<CustomAuthorizationMessageHandler>();
 
-        services.AddHttpClient("AuthorizedClient")
+        services.AddHttpClient("AuthorizedClient", client => client.BaseAddress = new Uri(apiBaseUrl))
             .AddHttpMessageHandler<CustomAuthorizationMessageHandler>();
     }
 }

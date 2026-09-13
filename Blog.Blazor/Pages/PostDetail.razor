@@ -6,6 +6,7 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigate;
 @inject LocalStorageService LocalStorage
+@inject IConfiguration Configuration
 
 <h3>PostDetail</h3>
 
@@ -77,7 +78,7 @@ else
         var client = HttpClientFactory.CreateClient("AuthorizedClient");
         try
         {
-            _post = await client.GetFromJsonAsync<GetPostByIdDtoRes>($"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}");
+            _post = await client.GetFromJsonAsync<GetPostByIdDtoRes>($"api/v1/Post/{Id}");
 
             foreach (var type in Enum.GetValues(typeof(InteractionType)).Cast<InteractionType>())
             {
@@ -106,7 +107,7 @@ else
             var token = await LocalStorage.GetItemAsync("authToken");
 
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("https://farzad-blog-api.azurewebsites.net/notification", options =>
+                .WithUrl($"{Configuration["ApiBaseUrl"]}notification", options =>
                 {
                     options.AccessTokenProvider = () => Task.FromResult(token);
                 })
@@ -151,7 +152,7 @@ else
         try
         {
             await client.DeleteAsync(
-                $"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}"
+                $"api/v1/Post/{Id}"
                 );
             
             Navigate.NavigateTo("posts");
@@ -168,7 +169,7 @@ else
         try
         {
             await client.DeleteAsync(
-                $"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}/Comment/{comment.Id}"
+                $"api/v1/Post/{Id}/Comment/{comment.Id}"
             );
             await OnInitializedAsync();
         }
@@ -183,7 +184,7 @@ else
         var client = HttpClientFactory.CreateClient("AuthorizedClient");
         try
         {
-            await client.PostAsJsonAsync<CreateComment>($"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}/Comment", _createComment);
+            await client.PostAsJsonAsync<CreateComment>($"api/v1/Post/{Id}/Comment", _createComment);
             _createComment.Text = "";
             await OnInitializedAsync();
         }
@@ -203,7 +204,7 @@ else
             {
                 Type = type
             };
-            await client.PostAsJsonAsync<CreateInteraction>($"https://farzad-blog-api.azurewebsites.net/api/v1/Post/{Id}/Interaction",createInteraction);
+            await client.PostAsJsonAsync<CreateInteraction>($"api/v1/Post/{Id}/Interaction",createInteraction);
             await OnInitializedAsync();
         }
         catch (Exception e)

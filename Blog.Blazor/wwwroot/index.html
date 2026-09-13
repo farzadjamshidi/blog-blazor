@@ -4,6 +4,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Blazor WASM has no ASPNETCORE_ENVIRONMENT process variable to read
+         once published as static files — this tag is how it knows which
+         wwwroot/appsettings.{Environment}.json to load. A real CI/CD
+         pipeline would template this value per build target instead of
+         checking in a fixed one; "Production" matches what's actually
+         deployed today. Locally, dotnet run's dev server always reports
+         Development regardless of this tag. -->
+    <meta name="blazor-environment" content="Production" />
     <title>Blog.Blazor</title>
     <base href="/" />
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
