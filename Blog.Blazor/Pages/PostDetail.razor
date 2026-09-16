@@ -75,6 +75,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadPostAsync();
+        await ConnectNotificationHubAsync();
+    }
+
+    private async Task LoadPostAsync()
+    {
         var client = HttpClientFactory.CreateClient("AuthorizedClient");
         try
         {
@@ -92,54 +98,59 @@ else
                     });
                 }
             }
-
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
         }
+    }
 
-        // Guarded: this method is already re-invoked elsewhere in this file
-        // as a manual "reload" (AddComment/DeleteComment/AddInteraction) —
-        // only set up the live connection once, not on every reload.
-        // Notifications now come from the separate blog-notifications
-        // service, not Blog.API — see
-        // learning-notes/notes/44-notifications-service-hub-move.md.
+    // Called once, from OnInitializedAsync only — reload paths
+    // (AddComment/DeleteComment/AddInteraction, and the hub's own
+    // NewComment handler below) call LoadPostAsync() directly instead, so
+    // the connection never gets re-established on every reload.
+    // Notifications come from the separate blog-notifications service,
+    // not Blog.API — see
+    // learning-notes/notes/44-notifications-service-hub-move.md.
+    private async Task ConnectNotificationHubAsync()
+    {
         var notificationsBaseUrl = Configuration["NotificationsBaseUrl"];
 
-        if (_hubConnection == null && !string.IsNullOrEmpty(notificationsBaseUrl))
+        if (string.IsNullOrEmpty(notificationsBaseUrl))
         {
-            var token = await LocalStorage.GetItemAsync("authToken");
+            return;
+        }
 
-            _hubConnection = new HubConnectionBuilder()
-                .WithUrl($"{notificationsBaseUrl}notification", options =>
+        var token = await LocalStorage.GetItemAsync("authToken");
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl($"{notificationsBaseUrl}notification", options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult(token);
+            })
+            .Build();
+
+        // Only this post's author ever receives this (server-side
+        // targeting) — the postId check just confirms it's this post.
+        _hubConnection.On<Guid, string>("NewComment", async (postId, _) =>
+        {
+            if (postId == Id)
+            {
+                await InvokeAsync(async () =>
                 {
-                    options.AccessTokenProvider = () => Task.FromResult(token);
-                })
-                .Build();
-
-            // Only this post's author ever receives this (server-side
-            // targeting) — the postId check just confirms it's this post.
-            _hubConnection.On<Guid, string>("NewComment", async (postId, _) =>
-            {
-                if (postId == Id)
-                {
-                    await InvokeAsync(async () =>
-                    {
-                        await OnInitializedAsync();
-                        StateHasChanged();
-                    });
-                }
-            });
-
-            try
-            {
-                await _hubConnection.StartAsync();
+                    await LoadPostAsync();
+                    StateHasChanged();
+                });
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
+        });
+
+        try
+        {
+            await _hubConnection.StartAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
         }
     }
 
@@ -176,7 +187,7 @@ else
             await client.DeleteAsync(
                 $"api/v1/Post/{Id}/Comment/{comment.Id}"
             );
-            await OnInitializedAsync();
+            await LoadPostAsync();
         }
         catch (Exception e)
         {
@@ -191,7 +202,7 @@ else
         {
             await client.PostAsJsonAsync<CreateComment>($"api/v1/Post/{Id}/Comment", _createComment);
             _createComment.Text = "";
-            await OnInitializedAsync();
+            await LoadPostAsync();
         }
         catch (Exception e)
         {
@@ -210,7 +221,7 @@ else
                 Type = type
             };
             await client.PostAsJsonAsync<CreateInteraction>($"api/v1/Post/{Id}/Interaction",createInteraction);
-            await OnInitializedAsync();
+            await LoadPostAsync();
         }
         catch (Exception e)
         {
