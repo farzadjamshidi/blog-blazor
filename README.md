@@ -1,15 +1,20 @@
 # Blog.Blazor
 
 The frontend for the blog — Blazor WebAssembly, MudBlazor. Talks to
-`Blog.API` over HTTP and a SignalR connection; it doesn't run anything on
-its own.
+`Blog.API` over HTTP, and to `blog-notifications` over a SignalR
+connection for live comment notifications (a separate, independently
+deployed service — see
+`../learning-notes/notes/44-notifications-service-hub-move.md`); it
+doesn't run anything on its own.
 
 ## Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- `Blog.API` running locally first — see `../blog/README.md`. By
-  default this app points at `https://localhost:7163`, the API's local
-  `https` launch profile.
+- `Blog.API` and `blog-notifications` running first — see
+  `../blog/README.md` (its Docker Compose setup runs both, plus
+  RabbitMQ). By default this app points at the Docker Compose ports:
+  `http://localhost:8080` for `Blog.API`, `http://localhost:8081` for
+  `blog-notifications`.
 
 ## Getting started
 
@@ -18,9 +23,12 @@ cd Blog.Blazor
 dotnet run
 ```
 
-Opens at `https://localhost:7279` (the `https` launch profile). The API
-base URL comes from `wwwroot/appsettings.Development.json` — if your
-local API runs on a different port, update `ApiBaseUrl` there.
+Opens at `https://localhost:7279` (the `https` launch profile). The base
+URLs come from `wwwroot/appsettings.Development.json` — if your local
+services run on different ports, update `ApiBaseUrl`/`NotificationsBaseUrl`
+there. Without `NotificationsBaseUrl` configured, live comment
+notifications are silently skipped rather than erroring — everything
+else still works.
 
 ## Running tests
 

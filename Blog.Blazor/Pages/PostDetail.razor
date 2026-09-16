@@ -102,12 +102,17 @@ else
         // Guarded: this method is already re-invoked elsewhere in this file
         // as a manual "reload" (AddComment/DeleteComment/AddInteraction) —
         // only set up the live connection once, not on every reload.
-        if (_hubConnection == null)
+        // Notifications now come from the separate blog-notifications
+        // service, not Blog.API — see
+        // learning-notes/notes/44-notifications-service-hub-move.md.
+        var notificationsBaseUrl = Configuration["NotificationsBaseUrl"];
+
+        if (_hubConnection == null && !string.IsNullOrEmpty(notificationsBaseUrl))
         {
             var token = await LocalStorage.GetItemAsync("authToken");
 
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl($"{Configuration["ApiBaseUrl"]}notification", options =>
+                .WithUrl($"{notificationsBaseUrl}notification", options =>
                 {
                     options.AccessTokenProvider = () => Task.FromResult(token);
                 })
