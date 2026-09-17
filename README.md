@@ -2,19 +2,20 @@
 
 The frontend for the blog — Blazor WebAssembly, MudBlazor. Talks to
 `Blog.API` over HTTP, and to `blog-notifications` over a SignalR
-connection for live comment notifications (a separate, independently
-deployed service — see
-`../learning-notes/notes/44-notifications-service-hub-move.md`); it
-doesn't run anything on its own.
+connection for live comment notifications — in the Docker Compose setup,
+both go through `blog-gateway` (a single address; this app has no idea a
+gateway exists — see `../learning-notes/notes/45-api-gateway-in-practice.md`
+and `44-notifications-service-hub-move.md`). It doesn't run anything on
+its own.
 
 ## Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- `Blog.API` and `blog-notifications` running first — see
-  `../blog/README.md` (its Docker Compose setup runs both, plus
-  RabbitMQ). By default this app points at the Docker Compose ports:
-  `http://localhost:8080` for `Blog.API`, `http://localhost:8081` for
-  `blog-notifications`.
+- `Blog.API`, `blog-notifications`, and `blog-gateway` running first —
+  see `../blog/README.md` (its Docker Compose setup runs all three, plus
+  RabbitMQ). By default this app points at the gateway's Docker Compose
+  port, `http://localhost:8082`, for both `ApiBaseUrl` and
+  `NotificationsBaseUrl`.
 
 ## Getting started
 
