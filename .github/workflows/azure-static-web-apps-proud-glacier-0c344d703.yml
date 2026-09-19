@@ -5,20 +5,57 @@ on:
     branches:
       - master
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
     branches:
       - master
 
 jobs:
-  build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+  test:
     runs-on: ubuntu-latest
-    name: Build and Deploy Job
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Run tests
+        run: dotnet test Blog.Blazor.Test/Blog.Blazor.Test.csproj --configuration Release
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      # Validates the app actually builds, on every push AND every PR — the
+      # same gate blog's build job provides. Azure/static-web-apps-deploy@v1
+      # below still performs its own build when it deploys; this step exists
+      # purely so a broken build fails loudly on a PR before it ever reaches
+      # master.
+      - name: dotnet publish
+        run: dotnet publish Blog.Blazor/Blog.Blazor.csproj --configuration Release
+
+  # Only deploy on a real push to master — never on a pull_request event,
+  # otherwise unmerged PR code would ship straight to production. PRs no
+  # longer get their own preview deployment; they're validated by the
+  # test/build jobs above instead.
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: true
           lfs: false
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -33,14 +70,11 @@ jobs:
           output_location: "wwwroot" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
 
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    name: Close Pull Request Job
-    steps:
-      - name: Close Pull Request
-        id: closepullrequest
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROUD_GLACIER_0C344D703 }}
-          action: "close"
+      # This is a static site, so there's no /health endpoint the way blog
+      # has one — the equivalent here is confirming the deployed root
+      # document actually comes back after deploy, since a successful
+      # upload doesn't guarantee the site is actually reachable afterward.
+      - name: Verify site is live after deploy
+        run: |
+          sleep 15
+          curl -f https://proud-glacier-0c344d703.azurestaticapps.net/ || exit 1

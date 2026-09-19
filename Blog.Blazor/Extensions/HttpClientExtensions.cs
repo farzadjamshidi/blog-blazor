@@ -28,11 +28,16 @@ public class CustomAuthorizationMessageHandler : DelegatingHandler
 
 public static class HttpClientExtensions
 {
-    public static void AddCustomAuthorizationHandler(this IServiceCollection services)
+    public static void AddCustomAuthorizationHandler(this IServiceCollection services, string apiBaseUrl)
     {
         services.AddTransient<CustomAuthorizationMessageHandler>();
 
-        services.AddHttpClient("AuthorizedClient")
-            .AddHttpMessageHandler<CustomAuthorizationMessageHandler>();
+        // 9.4 — retry (exponential backoff + jitter), circuit breaker,
+        // per-attempt and total-request timeouts, all with sensible
+        // defaults from one call — runs at the DelegatingHandler layer,
+        // so it works the same under Blazor WASM's Fetch-based transport.
+        services.AddHttpClient("AuthorizedClient", client => client.BaseAddress = new Uri(apiBaseUrl))
+            .AddHttpMessageHandler<CustomAuthorizationMessageHandler>()
+            .AddStandardResilienceHandler();
     }
 }
