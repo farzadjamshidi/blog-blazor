@@ -1,7 +1,6 @@
 @page "/register"
 @using Blog.Blazor.Extensions
-@using Blog.Blazor.Services
-@inject HttpClient Http
+@inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 
 <h3>Register</h3>
@@ -49,12 +48,12 @@
     private async Task HandleRegister()
     {
         registerModel.DateOfBirth = registerModel.DateOfBirth.ToUniversalTime();
-        var response = await Http.PostAsJsonAsync("api/v1/Identity/Register", registerModel);
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        var response = await client.PostAsJsonAsync("bff/register", registerModel);
         if (response.IsSuccessStatusCode)
         {
-            var token = await response.Content.ReadFromJsonAsync<RegisterResponseModel>();
             var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
-            await customAuthStateProvider.UpdateAuthenticationStateAsync(token?.Token);
+            await customAuthStateProvider.RefreshAuthenticationStateAsync();
             Navigation.NavigateTo("/");
         }
         else
@@ -72,10 +71,5 @@
         public string Phone { get; set; }
         public DateTime DateOfBirth { get; set; }
         public string CurrentCity { get; set; }
-    }
-    
-    public class RegisterResponseModel
-    {
-        public string Token { get; set; }
     }
 }

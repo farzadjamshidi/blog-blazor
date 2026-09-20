@@ -1,43 +1,46 @@
-
-using System.Net.Http.Headers;
-using Blog.Blazor.Services;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 namespace Blog.Blazor.Extensions;
 
-public class CustomAuthorizationMessageHandler : DelegatingHandler
+// BFF/Token Handler pattern (learning-notes/notes/50-bff-token-handler.md)
+// — this app never holds a JWT to attach as a Bearer header anymore.
+// Instead, every request needs to actually send the browser's
+// HttpOnly session cookie cross-origin, which fetch/XHR don't do by
+// default. SetBrowserRequestCredentials(Include) is the WASM-specific
+// equivalent of fetch's `credentials: 'include'`.
+public class CookieCredentialsHandler : DelegatingHandler
 {
-    private readonly LocalStorageService _localStorage;
-
-    public CustomAuthorizationMessageHandler(LocalStorageService localStorage)
+    // Runs before every request this handler is attached to (both the
+    // shared AuthorizedClient below, and the SignalR hub connection in
+    // PostDetail.razor, which reuses this same handler). Without this,
+    // the browser would silently omit the bff_session cookie on any
+    // cross-origin request (blog-blazor's origin is a different port
+    // than blog-gateway's) and every call would look logged-out.
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        _localStorage = localStorage;
-    }
-
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        var token = await _localStorage.GetItemAsync("authToken");
-
-        if (!string.IsNullOrEmpty(token))
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        }
-
-        return await base.SendAsync(request, cancellationToken);
+        request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
+        return base.SendAsync(request, cancellationToken);
     }
 }
 
 public static class HttpClientExtensions
 {
-    public static void AddCustomAuthorizationHandler(this IServiceCollection services, string apiBaseUrl)
+    // Replaces the old AddCustomAuthorizationHandler (which read a JWT
+    // from localStorage and attached it as a Bearer header). There's
+    // only one HttpClient registration in the whole app now — Login and
+    // Register used to need a separate, unauthenticated client, but once
+    // nothing attaches a bearer token client-side, that distinction
+    // stops existing; every call just needs the cookie included.
+    public static void AddCookieCredentialsHandler(this IServiceCollection services, string apiBaseUrl)
     {
-        services.AddTransient<CustomAuthorizationMessageHandler>();
+        services.AddTransient<CookieCredentialsHandler>();
 
         // 9.4 — retry (exponential backoff + jitter), circuit breaker,
         // per-attempt and total-request timeouts, all with sensible
         // defaults from one call — runs at the DelegatingHandler layer,
         // so it works the same under Blazor WASM's Fetch-based transport.
         services.AddHttpClient("AuthorizedClient", client => client.BaseAddress = new Uri(apiBaseUrl))
-            .AddHttpMessageHandler<CustomAuthorizationMessageHandler>()
+            .AddHttpMessageHandler<CookieCredentialsHandler>()
             .AddStandardResilienceHandler();
     }
 }

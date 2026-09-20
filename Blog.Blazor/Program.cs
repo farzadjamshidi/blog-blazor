@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Blog.Blazor;
 using Blog.Blazor.Extensions;
-using Blog.Blazor.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor.Services;
 
@@ -13,11 +12,13 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
     ?? throw new InvalidOperationException("ApiBaseUrl is not configured.");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
-builder.Services.AddScoped<LocalStorageService>();
+// BFF/Token Handler pattern (learning-notes/notes/50-bff-token-handler.md)
+// — this app never holds a JWT at all, only an HttpOnly session cookie,
+// so every call goes through the same cookie-credentialed client. No
+// more separate unnamed HttpClient for the pre-login calls.
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddAuthorizationCore();
-builder.Services.AddCustomAuthorizationHandler(apiBaseUrl);
+builder.Services.AddCookieCredentialsHandler(apiBaseUrl);
 builder.Services.AddMudServices();
 
 await builder.Build().RunAsync();

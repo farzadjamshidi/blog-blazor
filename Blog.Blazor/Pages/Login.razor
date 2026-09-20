@@ -1,7 +1,6 @@
 @page "/login"
 @using Blog.Blazor.Extensions
-@using Blog.Blazor.Services
-@inject HttpClient Http
+@inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 
 
@@ -25,18 +24,17 @@
 
 @code {
     private LoginModel loginModel = new LoginModel();
-    
-    [Inject] public LocalStorageService LocalStorage { get; set; }
+
     [Inject] public AuthenticationStateProvider authStateProvider { get; set; }
 
     private async Task HandleLogin()
     {
-        var response = await Http.PostAsJsonAsync("api/v1/Identity/Login", loginModel);
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        var response = await client.PostAsJsonAsync("bff/login", loginModel);
         if (response.IsSuccessStatusCode)
         {
-            var token = await response.Content.ReadFromJsonAsync<LoginResponseModel>();
             var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
-            await customAuthStateProvider.UpdateAuthenticationStateAsync(token?.Token);
+            await customAuthStateProvider.RefreshAuthenticationStateAsync();
             Navigation.NavigateTo("/");
         }
         else
@@ -49,10 +47,5 @@
     {
         public string UserName { get; set; }
         public string Password { get; set; }
-    }
-    
-    public class LoginResponseModel
-    {
-        public string Token { get; set; }
     }
 }

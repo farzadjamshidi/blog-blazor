@@ -1,7 +1,7 @@
 ﻿@using Blog.Blazor.Extensions
-@using Blog.Blazor.Services
 @inject AuthenticationStateProvider authStateProvider;
 @inject NavigationManager Navigation;
+@inject IHttpClientFactory HttpClientFactory;
 @inherits LayoutComponentBase
 
 @* Required *@
@@ -42,8 +42,11 @@
 {
     private async Task Logout()
     {
+        var client = HttpClientFactory.CreateClient("AuthorizedClient");
+        await client.PostAsync("bff/logout", null);
+
         var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
-        await customAuthStateProvider.UpdateAuthenticationStateAsync(null);
+        await customAuthStateProvider.RefreshAuthenticationStateAsync();
         Navigation.NavigateTo("/");
     }
 }

@@ -1,11 +1,10 @@
 @page "/post/{id:guid}"
 @using Blog.Blazor.Components
-@using Blog.Blazor.Services
+@using Blog.Blazor.Extensions
 @using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigate;
-@inject LocalStorageService LocalStorage
 @inject IConfiguration Configuration
 
 <h3>PostDetail</h3>
@@ -121,12 +120,16 @@ else
             return;
         }
 
-        var token = await LocalStorage.GetItemAsync("authToken");
-
+        // BFF/Token Handler pattern (learning-notes/notes/50-bff-token-handler.md)
+        // — no token to supply via AccessTokenProvider anymore. The
+        // gateway attaches the real JWT server-side once it sees the
+        // HttpOnly session cookie; CookieCredentialsHandler here just
+        // needs to make sure that cookie is actually sent on the
+        // negotiate call.
         _hubConnection = new HubConnectionBuilder()
             .WithUrl($"{notificationsBaseUrl}notification", options =>
             {
-                options.AccessTokenProvider = () => Task.FromResult(token);
+                options.HttpMessageHandlerFactory = inner => new CookieCredentialsHandler { InnerHandler = inner };
             })
             .Build();
 
